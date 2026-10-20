@@ -35,7 +35,7 @@ The pipeline processes nine datasets: customers, geolocation, order items, order
 | Sellers | 3,095 |
 | Category translation | 71 |
 
-ETL removes exact duplicate rows, parses selected date/time columns, writes cleaned CSVs to S3, and generates JSON data-quality reports. Geolocation shrank from 1,000,163 to 738,332 rows after exact-row deduplication; validate the intended grain before using this as a production transformation.
+ETL removes exact duplicate rows, parses selected date/time columns, writes cleaned CSVs to S3, and generates JSON data-quality reports. Date-quality metrics distinguish original missing values from malformed non-empty date values that could not be parsed. Geolocation shrank from 1,000,163 to 738,332 rows after exact-row deduplication; validate the intended grain before using this as a production transformation.
 
 ## Cost note
 
@@ -86,6 +86,16 @@ python src/load_orders_dynamodb.py
 ```
 
 This loads a small sample (100 rows by default) into `OlistOrderStatus`. The EC2 role needs permission to read the processed CSV and write items to that table. To change the sample size, set `ORDER_SAMPLE_LIMIT`. The table is for demonstrating key-based lookups, not a full data warehouse.
+
+## Tests
+
+Run the regression tests from the repository root:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The tests cover the canonical CSV-to-table mappings and date-quality reporting helpers. They do not replace running the full AWS pipeline and all SQL queries against the complete datasets.
 
 ## Limitations and next steps
 
