@@ -1,0 +1,8 @@
+data/
+*.duckdb
+*.duckdb.wal
+__pycache__/
+*.py[cod]
+.env
+.aws/
+.DS_Store
