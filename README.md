@@ -96,9 +96,3 @@ python -m unittest discover -s tests -v
 ```
 
 The tests cover the canonical CSV-to-table mappings and date-quality reporting helpers. They do not replace running the full AWS pipeline and all SQL queries against the complete datasets.
-
-## Limitations and next steps
-
-- Extend the analytical layer to Amazon Redshift for managed cloud data warehousing.
-- Validate deduplication rules and key relationships before using the ETL in production.
-- Further enhancements include incremental loads, orchestration, and infrastructure-as-code.
