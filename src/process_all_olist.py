@@ -36,6 +36,28 @@ DATE_COLUMNS = {
 }
 
 
+def parse_dates_with_quality(df, columns):
+    """Parse dates while reporting original nulls separately from invalid values."""
+    quality = {}
+    for column in columns:
+        if column not in df.columns:
+            quality[column] = {"column_present": False}
+            continue
+
+        original = df[column]
+        original_missing = original.isna() | original.astype("string").str.strip().eq("")
+        parsed = pd.to_datetime(original, errors="coerce")
+        invalid = (~original_missing) & parsed.isna()
+        quality[column] = {
+            "column_present": True,
+            "original_missing_values": int(original_missing.sum()),
+            "invalid_nonempty_values": int(invalid.sum()),
+            "parsed_missing_values": int(parsed.isna().sum()),
+        }
+        df[column] = parsed
+    return quality
+
+
 def main():
     s3 = boto3.client("s3", region_name=REGION)
     report = {
@@ -51,9 +73,8 @@ def main():
         input_rows = len(df)
         duplicate_rows = int(df.duplicated().sum())
         df = df.drop_duplicates().copy()
-        for column in DATE_COLUMNS.get(filename, []):
-            if column in df.columns:
-                df[column] = pd.to_datetime(df[column], errors="coerce")
+
+        date_quality = parse_dates_with_quality(df, DATE_COLUMNS.get(filename, []))
 
         output_name = filename[:-4] + "_cleaned.csv"
         output_key = f"{PROCESSED_PREFIX}{output_name}"
@@ -68,9 +89,18 @@ def main():
             "output_rows": len(df),
             "exact_duplicate_rows_removed": duplicate_rows,
             "missing_values_by_column": missing,
+            "date_quality": date_quality,
             "output_s3_uri": f"s3://{BUCKET}/{output_key}",
         }
-        print(f"{filename}: {input_rows:,} -> {len(df):,} rows; removed {duplicate_rows:,} exact duplicates")
+        invalid_dates = sum(
+            values.get("invalid_nonempty_values", 0)
+            for values in date_quality.values()
+        )
+        print(
+            f"{filename}: {input_rows:,} -> {len(df):,} rows; "
+            f"removed {duplicate_rows:,} exact duplicates; "
+            f"invalid non-empty date values: {invalid_dates:,}"
+        )
 
     report_key = f"{PROCESSED_PREFIX}all_datasets_quality_report.json"
     s3.put_object(
