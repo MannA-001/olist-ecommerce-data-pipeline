@@ -6,7 +6,7 @@ Portfolio project using Amazon S3, EC2, DynamoDB, Python/Pandas, and DuckDB to p
 
 Olist CSVs → S3 `Raw/` → EC2 Python/Pandas ETL → S3 `Processed/` → DuckDB SQL analytics.
 
-DynamoDB is used for a small order-status lookup demonstration. Redshift is not currently provisioned; DuckDB keeps analytics cost-conscious.
+DynamoDB is used for a small order-status lookup demonstration. DuckDB provides SQL analytics in a lightweight local warehouse; the design can be extended to Amazon Redshift for managed cloud warehousing.
 
 ## Datasets
 
@@ -39,7 +39,7 @@ ETL removes exact duplicate rows, parses selected date/time columns, writes clea
 
 ## Cost note
 
-Redshift has not been provisioned. DuckDB is used for local analytics to avoid unnecessary ongoing warehouse costs. The DynamoDB demo uses a limited sample of orders and is not a complete replica of the orders dataset.
+DuckDB is used for local analytics to keep the project lightweight and cost-conscious. Amazon Redshift is a natural next step for scaling the analytical layer into a managed cloud data warehouse. The DynamoDB demo uses a limited sample of orders and is not a complete replica of the orders dataset.
 
 ## Repository contents
 
@@ -99,6 +99,6 @@ The tests cover the canonical CSV-to-table mappings and date-quality reporting h
 
 ## Limitations and next steps
 
-- Redshift is not provisioned in this cost-conscious version. Do not claim Redshift implementation until it has been deployed and tested.
-- Validate the deduplication rules and key relationships before treating this portfolio ETL as production-ready.
-- Add automated tests, incremental loads, orchestration, and infrastructure-as-code as future improvements.
+- Extend the analytical layer to Amazon Redshift for managed cloud data warehousing.
+- Validate deduplication rules and key relationships before using the ETL in production.
+- Further enhancements include incremental loads, orchestration, and infrastructure-as-code.
