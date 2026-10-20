@@ -44,3 +44,51 @@ Redshift has not been provisioned. DuckDB is used for local analytics to avoid u
 ## Repository contents
 
 Code and SQL only. Raw datasets, processed data, local database files, and credentials should never be committed.
+
+## Run the project
+
+### 1. Install dependencies
+
+Python 3.9 or newer is recommended.
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### 2. Run the AWS ETL on EC2
+
+Attach an IAM instance role with read access to `Raw/*` and write access to `Processed/*` in your bucket. Then set the bucket if it differs from the default:
+
+```bash
+export OLIST_BUCKET=olist-aws-project
+export AWS_REGION=ap-southeast-2
+python src/process_all_olist.py
+```
+
+The script writes cleaned CSVs and `all_datasets_quality_report.json` to the S3 `Processed/` prefix. The script uses the instance role; never put access keys in source code.
+
+### 3. Download processed CSVs for local analytics
+
+Download all nine `*_cleaned.csv` files from your S3 `Processed/` prefix into the repository's `data/` directory. Keep this directory out of Git.
+
+### 4. Create DuckDB tables
+
+```bash
+python src/load_data.py
+```
+
+The script creates `olist.duckdb` and one table per cleaned CSV. Then run queries from `sql/analytics.sql` in a DuckDB SQL client or notebook.
+
+### 5. Optional DynamoDB lookup demo
+
+```bash
+python src/load_orders_dynamodb.py
+```
+
+This loads a small sample (100 rows by default) into `OlistOrderStatus`. The EC2 role needs permission to read the processed CSV and write items to that table. To change the sample size, set `ORDER_SAMPLE_LIMIT`. The table is for demonstrating key-based lookups, not a full data warehouse.
+
+## Limitations and next steps
+
+- Redshift is not provisioned in this cost-conscious version. Do not claim Redshift implementation until it has been deployed and tested.
+- Validate the deduplication rules and key relationships before treating this portfolio ETL as production-ready.
+- Add automated tests, incremental loads, orchestration, and infrastructure-as-code as future improvements.
