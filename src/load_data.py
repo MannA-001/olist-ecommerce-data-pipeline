@@ -12,8 +12,25 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 DB_PATH = ROOT / "olist.duckdb"
 
+# Canonical table names used by sql/analytics.sql.
+TABLE_NAMES = {
+    "olist_customers_dataset_cleaned.csv": "customers",
+    "olist_geolocation_dataset_cleaned.csv": "geolocation",
+    "olist_order_items_dataset_cleaned.csv": "order_items",
+    "olist_order_payments_dataset_cleaned.csv": "order_payments",
+    "olist_order_reviews_dataset_cleaned.csv": "order_reviews",
+    "olist_orders_dataset_cleaned.csv": "orders",
+    "olist_products_dataset_cleaned.csv": "products",
+    "olist_sellers_dataset_cleaned.csv": "sellers",
+    "product_category_name_translation_cleaned.csv": "category_translation",
+}
+
 
 def table_name(filename):
+    """Return the stable, documented DuckDB table name for a cleaned CSV."""
+    if filename in TABLE_NAMES:
+        return TABLE_NAMES[filename]
+    # Allow additional cleaned CSVs while keeping identifiers SQL-safe.
     name = filename.removesuffix("_cleaned.csv")
     name = re.sub(r"[^a-zA-Z0-9_]", "_", name)
     return name.removeprefix("olist_")
@@ -32,7 +49,10 @@ def main():
             table = table_name(path.name)
             # Escape single quotes in paths before passing them to DuckDB SQL.
             csv_path = str(path).replace("'", "''")
-            con.execute(f'CREATE OR REPLACE TABLE "{table}" AS SELECT * FROM read_csv_auto(\'{csv_path}\', header=true)')
+            con.execute(
+                f'CREATE OR REPLACE TABLE "{table}" AS '
+                f"SELECT * FROM read_csv_auto('{csv_path}', header=true)"
+            )
             count = con.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
             print(f"{table}: {count:,} rows")
     finally:
